@@ -7,8 +7,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.ws.http.HTTPException;
-import java.security.cert.X509Certificate;
 
+import org.bouncycastle.asn1.ASN1Encodable;
+import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.DERTaggedObject;
+
+import java.security.cert.X509Certificate;
 import java.security.cert.CertificateParsingException;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -17,6 +22,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
@@ -104,23 +110,34 @@ public class EsriPKITomcatAuthFilter implements Filter{
 		            List list = (List) it.next();
 		            int type = ((Integer) list.get(0)).intValue();
 		            log.log(Level.INFO, "**** SAN type is :  " + type);
-		            log.log(Level.INFO, "**** SAN name is :  " + list.get(1).toString());
 		            
 		            // if type == 0, then this returns the OtherName of the SAN list
-		            /*
 		            if (type == 0)
 		            {
 		            	try
 		            	{
-		            		byte[] bytes = (byte[]) list.get(1);
-		            		log.log(Level.INFO, "**** SAN name is :  " + new String(bytes));
-			            	
+		            		ASN1InputStream decoder=null;
+	                        if(list.toArray()[1] instanceof byte[])
+	                            decoder = new ASN1InputStream((byte[]) list.toArray()[1]);
+	                        
+	                        if(decoder==null) continue;
+	                        ASN1Encodable encoded = decoder.readObject();
+	                        ASN1Sequence sequence = (ASN1Sequence) encoded.toASN1Primitive();
+	                        Enumeration<?> it2 = sequence.getObjects();
+	                        while (it2.hasMoreElements()) {
+	                        	Object obj = it2.nextElement();
+	                        	if (obj instanceof DERTaggedObject) {
+	                        		DERTaggedObject tagged = (DERTaggedObject) obj;
+	                        		DERTaggedObject tagged2 = (DERTaggedObject) tagged.getObject();
+	                        		String email = tagged2.getObject().toString();
+	                        		return email;
+	                        	}
+	                        }
 		            	} catch (Exception e) {
-		    				log.log(Level.SEVERE, "**** ERROR GETTING Subject Alternative Name ****");
+		    				log.log(Level.SEVERE, "**** ERROR GETTING Subject Alternative Name ****" + e.getMessage());
 		    				return null;
 		    			}
 		            }
-		            */
 		            
 		            // if type == 1, then this returns the RFC822 of the SAN list
 		            if (type == 1)
