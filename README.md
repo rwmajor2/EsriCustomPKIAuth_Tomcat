@@ -12,6 +12,8 @@ Deploy the JAR file to /webapps/portal/WEB-INF/lib folder.
     *** Must also deploy bouncycastle JAR file to this same folder.
 ```
 
+In the Source code, you will need to make a decision on which Subject Alternative name to extract.  Type 0 will come from the "OtherName" SAN and Type 1 will come from the RFC822 specification name.  Alter the code accordingly for your purposes, i.e. comment out a section in favor of the other.
+
 Near the beginning of the Web Adaptor's web.xml, add the following after the line `<display-name>`:
 ```xml
    ...
