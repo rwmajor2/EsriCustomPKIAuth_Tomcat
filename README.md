@@ -1,14 +1,20 @@
 # EsriCustomPKIAuth_Tomcat
 Custom Web Tier Authentication for PKI using Tomcat and Esri Web Adaptor
 
+```
 Set up a new Eclipse Dynamic Web Project.
 Add servlet-api.jar to the Eclipse project from your Tomcat lib folder as an External JAR reference.
+Add bouncycastle JAR to Eclipse project found in this repo; can be downloaded from internet also.
 Implement a new Package called com.esri.gw.security.
 Copy/paste source code into a new class.
 Compile source code to a JAR file.
 Deploy the JAR file to /webapps/portal/WEB-INF/lib folder.
+    *** Must also deploy bouncycastle JAR file to this same folder.
+```
 
-Near the beginning of the Web Adaptor's web.xml, add the following:
+In the Source code, you will need to make a decision on which Subject Alternative name to extract.  Type 0 will come from the "OtherName" SAN and Type 1 will come from the RFC822 specification name.  Alter the code accordingly for your purposes, i.e. comment out a section in favor of the other.
+
+Near the beginning of the Web Adaptor's web.xml, add the following after the line `<display-name>`:
 ```xml
    ...
 	<display-name>ArcGIS Web Adaptor</display-name>
@@ -20,8 +26,6 @@ Near the beginning of the Web Adaptor's web.xml, add the following:
 		<filter-name>EsriPKIAuthFilter</filter-name>
 		<url-pattern>/*</url-pattern>
 	</filter-mapping>
-	<servlet>
-		<servlet-name>agswebadaptor</servlet-name>
 	...
 ```
 
