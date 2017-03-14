@@ -1,5 +1,5 @@
 # EsriCustomPKIAuth_Tomcat
-Custom Web Tier Authentication for PKI using Tomcat and Esri Web Adaptor
+Custom Web Tier Authentication for PKI using Tomcat and Esri Web Adaptor.  This source code can be used in situations where you want to require a PKI User Certificate, but you have no authenticating identity store such as Active Directory or LDAP.  The source code will pull an email address from the PKI certificate itself and pass that through as the Principal, overriding the getRemoteUser() method for the Web Adaptor to call.
 
 ```
 Set up a new Eclipse Dynamic Web Project.
@@ -19,7 +19,6 @@ In the Source code, you will need to make a decision on which Subject Alternativ
 Near the beginning of the Web Adaptor's web.xml, add the following after the line `<display-name>`:
 ```xml
    ...
-	<display-name>ArcGIS Web Adaptor</display-name>
 	<filter>
 		<filter-name>EsriPKIAuthFilter</filter-name>
 		<filter-class>com.esri.gw.security.EsriPKITomcatAuthFilter</filter-class>
