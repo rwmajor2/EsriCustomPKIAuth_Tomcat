@@ -44,10 +44,28 @@ public class EsriPKITomcatAuthFilter implements Filter{
 			//   a wrapper defined below that pulls out the email for the username in getRemoteUser()
 			chain.doFilter(new EsriPKITomcatAuthFilterWrapper(httpReq), httpRes);
 		} else {
-			// If no certificate is present, throw a 403 HTTP error.
+			// If no certificate is present, check for a JSESSIONID cookie.
 			log.log(Level.SEVERE, "**** No PKI Certificate found in request ****");
-			throw new HTTPException(403);
-		}
+			
+			HttpSession session = httpReq.getSession(false);
+			  if (session != null) {
+					log.log(Level.INFO, "Found Session: " + session.getId().toString());
+					String sans = session.getAttribute("sans").toString();
+					log.log(Level.INFO, "Sans :" + sans);
+					if (null != sans && sans.length() > 0) {
+						chain.doFilter(new EsriSessionTomcatFilterWrapper(httpReq), httpRes);
+					} else {
+						log.log(Level.SEVERE, "**** No PKI or SANs not found ****");
+						throw new HTTPException(403);
+
+					}
+				} else {
+					log.log(Level.SEVERE, "**** No PKI nor SessionID  ****");
+					throw new HTTPException(403);
+				}
+			  
+			  }
+		
 	}
 
 	@Override
@@ -60,6 +78,49 @@ public class EsriPKITomcatAuthFilter implements Filter{
 		// TODO Auto-generated method stub
 	}
 	
+	public class EsriSessionTomcatFilterWrapper extends HttpServletRequestWrapper {
+
+		// Setup logger which logs to Tomcat default log files...
+		private final Logger log = Logger.getLogger("EsriPKITomcatAuthFilterWrapper");
+
+		public EsriSessionTomcatFilterWrapper(HttpServletRequest request) {
+			super(request);
+		}
+
+		@Override
+		public String getRemoteUser() {
+
+			// This method is what the Web Adaptor calls to determine if Web Tier
+			// Authentication has occurred.
+			// If it returns a value, then Portal will do Single Sign On if
+			// enableAutomaticAccountCreation is set to true.
+			// This must return a value for this to occur. If a null value is return, a user
+			// will be passed
+			// through and no SSO will occur.
+
+			HttpServletRequest req = (HttpServletRequest) super.getRequest();
+
+			HttpSession session = req.getSession(false);
+
+			try {
+				// Call function below to get the Subject Alternative Name.
+				// The potential exists for this method to return a null. One may want to
+				// consider that
+				// if no SANs can be extracted, then return a 403 error instead of a null, which
+				// passes the
+				// request on through to Portal.
+				String sans = session.getAttribute("sans").toString();
+				return sans;
+			} catch (Exception e) {
+				// If an error occurs in method getting Session SANs, then log it and return
+				// null
+				log.log(Level.SEVERE, "**** Exception Retrieving Session SANS ****");
+				return null;
+			}
+		}
+	}
+
+
 	public class EsriPKITomcatAuthFilterWrapper extends HttpServletRequestWrapper {
 
 		// Setup logger which logs to Tomcat default log files...
@@ -91,6 +152,7 @@ public class EsriPKITomcatAuthFilter implements Filter{
 				//  if no SANs can be extracted, then return a 403 error instead of a null, which passes the 
 				//  request on through to Portal.
 				String sans = getDNSSubjectAlts(userPKI);
+				session.setAttribute("sans", sans);
 				return sans;
 			} catch (CertificateParsingException e) {
 				// If an error occurs in method getDNSSubjectAlts, then log it and return null
